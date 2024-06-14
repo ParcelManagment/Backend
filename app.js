@@ -7,7 +7,7 @@ const app = express()
 app.use(express.static('public'))
 app.set('view engine','ejs')
 
-const dbURI = "###############"
+const dbURI = "mongodb+srv://kavi2020wick:<password>@cluster0.kh6gmvi.mongodb.net/"
 mongoose.connect(dbURI,{useNewUrlParser:true,useUnifiedTopology:true,useCreateIndex:true})
 .then((result)=>app.listan(port))
 .catch((err)=>console.log(err));
