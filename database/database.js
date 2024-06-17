@@ -5,7 +5,6 @@ require('dotenv').config();
 var connection;
 
 function dbConfig() {
-  
     return new Promise((resolve, reject) => {
       // Create the connection instance
       const connection = mysql.createConnection({

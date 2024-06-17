@@ -69,7 +69,7 @@ async function hashPassword(password){
 
  function savaUserCredientials(username, hashPassword, connection){
     
-    const query = 'INSERT INTO users (username, password) VALUES (?,?)';
+    const query = 'INSERT INTO user (username, password) VALUES (?,?)';
     return new Promise((resolve, reject)=>{
     const result = connection.query(query, [username, hashPassword], (err, result) =>{
         if(err){
