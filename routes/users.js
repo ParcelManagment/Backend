@@ -17,23 +17,42 @@ router.post('/signup', async (req, res, next) => {
     const data = req.body;
     const username = data.username;
     const password = data.password;
+    const email = data.email;
 
-    const validationError = validate(username, password);
+    const emptyFields = checkEmpty(email, username, password);
+
+    if(emptyFields){
+        res.status(500).json({Error: emptyFields})
+        return
+    }
+
+    try{
+        const validEmail = await validateEmail(email, connection);
+        console.log(validEmail)
+
+    }catch(err){
+        res.status(500).json({Error: err, message: 'Registration Failed'})
+        return
+    }
+
+
+    const validationError = validate(email, username, password);
     if(validationError){
         res.status(500).json({Error: validationError})
         return;
     }
     
     try{
-    const hash = await hashPassword(password)
-    console.log(hash)
+        const hash = await hashPassword(password)
+        console.log("hash -- ",hash)  // developing
 
-    const result = await savaUserCredientials(username, hash, connection)
-    console.log('creating jwt')
-    const token = jwt.sign({username: username},'jnldskgj435092946w7t698143y$!@%#$$^EWT$%', {expiresIn:'1h'});
-    console.log('jwt is ', token)
-    res.cookie('token',token,{httpOnly: true})
-    res.status(201).json({Error: null, message: 'Registration Successful', userId: result.insertId, })
+        const result = await savaUserCredientials(email, username, hash, connection)
+        const token = jwt.sign({username: username},'jnldskgj435092946w7t698143y$!@%#$$^EWT$%', {expiresIn:'1h'});
+        console.log('jwt -- ', token)  // developing
+        res.cookie('token',token,{httpOnly: true})
+        res.status(201).json({Error: null, message: 'Registration Successful', userId: result.insertId, 
+        })
+        
     }catch(err){
         try{
         console.log("registration error occured", err);  // developing
@@ -48,17 +67,39 @@ router.post('/signup', async (req, res, next) => {
 });
 
 
-
-
-function validate(username, password){
-    if(!username || typeof username !== 'string'){
-        return 'Please enter a Valid Username'
+function checkEmpty(email, username, password){
+    if(!email){
+        return "Please Enter Your Email."
     }
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const valid = regex.test(email);
+    if(!valid){
+        return "invalid Email"
+    }
+    if(!username){
+        return "Please Enter Your Username."
+    }
+
+    if(!password){
+        return "Please Enter a Password."
+    }
+}
+
+function validate(email, username, password){
+    
+    if(typeof username !== 'string'){
+        return 'Invalid Username'
+    }
+
+    if (username.length < 3 || username.length > 20) {
+        return "invalid username, too short"
+      }
+
     if(username.length <2){
         return "invalid username"
     }
-    if(!password || typeof password !== 'string'){
-        return 'Please enter your password'
+    if(typeof password !== 'string'){
+        return 'Invalid Password'
     }
     if(password.length<6){
         return "Password should have minimum 6 characters"
@@ -71,17 +112,34 @@ function validate(username, password){
     }
 }
 
+async function validateEmail(email, connection){
+    return new Promise((resolve, reject) =>{
+        const query = 'SELECT * FROM user WHERE email = ?';
+        connection.query(query, [email], (err, result) =>{
+            if(err){
+                reject("Server Error")
+                return
+            } 
+            if(result.length>0){
+                reject("user Already Registered")
+                return
+            }
+            resolve("valid Email")
+            })
+        }) 
+};
+
 async function hashPassword(password){
     const saltRound = 10;
     const hash = await bcrypt.hash(password,saltRound);
     return hash;
 }
 
- function savaUserCredientials(username, hashPassword, connection){
+ function savaUserCredientials(email,username, hashPassword, connection){
     
-    const query = 'INSERT INTO user (username, password) VALUES (?,?)';
+    const query = 'INSERT INTO user (email, username, password) VALUES (?,?,?)';
     return new Promise((resolve, reject)=>{
-    const result = connection.query(query, [username, hashPassword], (err, result) =>{
+    connection.query(query, [email, username, hashPassword], (err, result) =>{
         if(err){
             reject(err);
         }else{
