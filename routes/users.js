@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const  {connectDb,getConnection, endConnection} = require('../database/database.js')
 
 
@@ -15,7 +16,7 @@ router.post('/signup', async (req, res, next) => {
 
     const data = req.body;
     const username = data.username;
-    const password = data.password
+    const password = data.password;
 
     const validationError = validate(username, password);
     if(validationError){
@@ -28,10 +29,19 @@ router.post('/signup', async (req, res, next) => {
     console.log(hash)
 
     const result = await savaUserCredientials(username, hash, connection)
+    console.log('creating jwt')
+    const token = jwt.sign({username: username},'jnldskgj435092946w7t698143y$!@%#$$^EWT$%', {expiresIn:'1h'});
+    console.log('jwt is ', token)
+    res.cookie('token',token,{httpOnly: true})
     res.status(201).json({Error: null, message: 'Registration Successful', userId: result.insertId, })
     }catch(err){
+        try{
         console.log("registration error occured", err);  // developing
         res.status(500).json({Error: "Registration Failed"})
+        }catch(error){
+            console.log('error occured while responding to the client')
+        }
+
     }finally{
        // endConnection()
     }
