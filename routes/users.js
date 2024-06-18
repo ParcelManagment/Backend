@@ -22,13 +22,14 @@ router.post('/signup', async (req, res, next) => {
     const email = data.email;
     const mobileNum = data.mobileNum
 
-    const emptyFields = checkEmpty(email, username, password, mobileNum);
+    const emptyFields = checkEmptySignUp(email, username, password, mobileNum);
     
     if(emptyFields){
         res.status(500).json({Error: emptyFields})
         return;
     }
 
+    // checking the user email is already registered
     try{
         const validEmail = await validateEmail(email, connection);
         console.log(validEmail)
@@ -36,8 +37,8 @@ router.post('/signup', async (req, res, next) => {
         res.status(500).json({Error: err, message: 'Registration Failed'})
         return;
     }
-
-
+    
+    // validate the user inputs
     const validationError = validate(email, username, password, mobileNum);
     if(validationError){
         res.status(500).json({Error: validationError})
@@ -48,10 +49,11 @@ router.post('/signup', async (req, res, next) => {
         const hash = await hashPassword(password)
         console.log("hash -- ",hash)  // developing
 
+        // SAVE DATA IN DATABSE
         const result = await savaUserCredientials(email, username, hash, mobileNum, connection)
-        const token = jwt.sign({username: username, email: email},'jnldskgj435092946w7t698143y$!@%#$$^EWT$%', {expiresIn:'1h'});
+        const token = jwt.sign({username:  username, email: email, role: "user"},process.env.JWT_SECRET, {expiresIn:'1h'});
         console.log('jwt -- ', token)  // developing
-        res.cookie('token',token,{httpOnly: true})
+        res.cookie('token',token,{httpOnly: true}) // set cookie
         res.status(201).json({Error: null, message: 'Registration Successful', userId: result.insertId, 
         })
 
@@ -68,8 +70,55 @@ router.post('/signup', async (req, res, next) => {
     }
 });
 
+router.post('/login', async (req, res, next) => {
+
+  
+    const connection = getConnection();
+    if(!connection){
+        console.log("Database connection unavailable")
+        res.status(500).json({Error: "Database Error"})
+        return;
+    }
+
+    const data = req.body;
+    const email = data.email;
+    const password = data.password;
+
+    // check empty fields
+    const invalid = checkEmptyLogin(email, password);
+    if(invalid){
+        res.status(400).json({Error: "Empty Fields. Please Try Agian", invalid})
+        return;
+    }
+
+    try{
+        const user = await findUser(email, connection);
+        const validPassword = await verifyPassword(password, user.password);
+        
+        if(!validPassword){
+            res.status(401).json({Error: "invalid Password"});
+            return;        
+        }
+
+        console.log("valid") //developing
+        const token = jwt.sign({username: user.username, email: user.email, role: user.role},process.env.JWT_SECRET, {expiresIn:'1h'});
+        console.log('jwt -- ', token)  // developing
+        res.cookie('token',token,{httpOnly: true})
+        res.status(200).json({Error: null, massage: "login Successful"})
+        
+    }catch(err){
+        res.status(500).json({Error: err})
+        console.log(err)
+    }
+
+
+
+
+})
+
+
 // check the user inputs availability
-function checkEmpty(email, username, password, mobileNum){
+function checkEmptySignUp(email, username, password, mobileNum){
     if(!email){
         return "Please Enter Your Email."
     }
@@ -89,6 +138,16 @@ function checkEmpty(email, username, password, mobileNum){
         return "Please Enter Your mobile Number."
     }
 
+}
+
+function checkEmptyLogin(email, password){
+    if(!email){
+        return "Empty Email"
+    }
+    if(!password){
+        return "Empty Password."
+    }
+    return null;
 }
 
 // validation of the user inputs
@@ -173,6 +232,25 @@ function validateSriLankanPhoneNumber(phoneNumber) {
     return phoneNumberObj && phoneNumberObj.isValid();
 }
 
+async function findUser(email, connection){
+    return new Promise((resolve, reject) =>{
+        const query = 'SELECT * FROM user WHERE email = ?';
+        connection.query(query, [email], (err, result) =>{
+            if(err){
+                reject("Something Went Wrong")
+                return;
+            } 
+            if(result.length == 0){
+                reject("Not Registered")
+                return;
+            }
+            resolve(result[0]);
+            })
+        }) 
+};
 
+async function verifyPassword(password, hashPassword){
+    return await bcrypt.compare(password, hashPassword);
+}
 
 module.exports = router;
