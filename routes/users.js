@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { parsePhoneNumberFromString } = require('libphonenumber-js');
+
 const  {connectDb,getConnection, endConnection} = require('../database/database.js')
 
 
@@ -18,25 +20,25 @@ router.post('/signup', async (req, res, next) => {
     const username = data.username;
     const password = data.password;
     const email = data.email;
+    const mobileNum = data.mobileNum
 
-    const emptyFields = checkEmpty(email, username, password);
-
+    const emptyFields = checkEmpty(email, username, password, mobileNum);
+    
     if(emptyFields){
         res.status(500).json({Error: emptyFields})
-        return
+        return;
     }
 
     try{
         const validEmail = await validateEmail(email, connection);
         console.log(validEmail)
-
     }catch(err){
         res.status(500).json({Error: err, message: 'Registration Failed'})
-        return
+        return;
     }
 
 
-    const validationError = validate(email, username, password);
+    const validationError = validate(email, username, password, mobileNum);
     if(validationError){
         res.status(500).json({Error: validationError})
         return;
@@ -46,13 +48,13 @@ router.post('/signup', async (req, res, next) => {
         const hash = await hashPassword(password)
         console.log("hash -- ",hash)  // developing
 
-        const result = await savaUserCredientials(email, username, hash, connection)
-        const token = jwt.sign({username: username},'jnldskgj435092946w7t698143y$!@%#$$^EWT$%', {expiresIn:'1h'});
+        const result = await savaUserCredientials(email, username, hash, mobileNum, connection)
+        const token = jwt.sign({username: username, email: email},'jnldskgj435092946w7t698143y$!@%#$$^EWT$%', {expiresIn:'1h'});
         console.log('jwt -- ', token)  // developing
         res.cookie('token',token,{httpOnly: true})
         res.status(201).json({Error: null, message: 'Registration Successful', userId: result.insertId, 
         })
-        
+
     }catch(err){
         try{
         console.log("registration error occured", err);  // developing
@@ -66,8 +68,8 @@ router.post('/signup', async (req, res, next) => {
     }
 });
 
-
-function checkEmpty(email, username, password){
+// check the user inputs availability
+function checkEmpty(email, username, password, mobileNum){
     if(!email){
         return "Please Enter Your Email."
     }
@@ -83,10 +85,15 @@ function checkEmpty(email, username, password){
     if(!password){
         return "Please Enter a Password."
     }
+    if(!mobileNum){
+        return "Please Enter Your mobile Number."
+    }
+
 }
 
-function validate(email, username, password){
-    
+// validation of the user inputs
+function validate(email, username, password, mobileNum){
+
     if(typeof username !== 'string'){
         return 'Invalid Username'
     }
@@ -110,8 +117,14 @@ function validate(email, username, password){
     if(!containsUppercase || !containsSymbol){
         return "Oops! Make sure your password has at least one uppercase letter and one special character."
     }
+
+    const validnum = validateSriLankanPhoneNumber(mobileNum);
+    if(!validnum){
+        return "Please enter valid Phone number"
+    }
 }
 
+// validatae whether already registered or not using the email. 
 async function validateEmail(email, connection){
     return new Promise((resolve, reject) =>{
         const query = 'SELECT * FROM user WHERE email = ?';
@@ -135,11 +148,12 @@ async function hashPassword(password){
     return hash;
 }
 
- function savaUserCredientials(email,username, hashPassword, connection){
+// save user details in the database
+ function savaUserCredientials(email,username, hashPassword, mobileNum, connection){
     
-    const query = 'INSERT INTO user (email, username, password) VALUES (?,?,?)';
+    const query = 'INSERT INTO user (email, username, password, mobile_number) VALUES (?,?,?,?)';
     return new Promise((resolve, reject)=>{
-    connection.query(query, [email, username, hashPassword], (err, result) =>{
+    connection.query(query, [email, username, hashPassword, mobileNum], (err, result) =>{
         if(err){
             reject(err);
         }else{
@@ -152,5 +166,13 @@ async function hashPassword(password){
 
     
 }
+
+// validate the user input mobile number
+function validateSriLankanPhoneNumber(phoneNumber) {
+    const phoneNumberObj = parsePhoneNumberFromString(phoneNumber, 'LK');
+    return phoneNumberObj && phoneNumberObj.isValid();
+}
+
+
 
 module.exports = router;
