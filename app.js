@@ -16,7 +16,9 @@ app.use('/users', users);
 app.get('/', (req, res) => {
   res.send('entry point')
 })
-
+app.get('/login', (req, res) => {
+  res.send('This is login')
+})
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
 })
