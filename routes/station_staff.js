@@ -2,13 +2,14 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { parsePhoneNumberFromString } = require('libphonenumber-js');
+
 
 const  {connectDb,getConnection, endConnection} = require('../database/database.js')
 
 
 router.post('/signup', async (req, res, next) => {
     
+    // database connection
     const connection = getConnection();
     if(!connection){
         console.log("Database connection unavailable")
@@ -16,30 +17,31 @@ router.post('/signup', async (req, res, next) => {
         return;
     }
 
+    // extracting the submitted data
     const data = req.body;
-    const username = data.username;
+    const employee_id = data.employee_id;
+    const name = data.name;
     const password = data.password;
-    const email = data.email;
-    const mobileNum = data.mobileNum
 
-    const emptyFields = checkEmptySignUp(email, username, password, mobileNum);
-    
-    if(emptyFields){
-        res.status(500).json({Error: emptyFields})
+
+    if(!employee_id || !name || !password){
+        res.status(500).json({Error: "Please submit all the required field"})
         return;
     }
+    
+
 
     // checking the user email is already registered
     try{
-        const validEmail = await validateEmail(email, connection);
-        console.log(validEmail)
+        const newEmployee = await registered(employee_id, connection);
+        
     }catch(err){
         res.status(500).json({Error: err, message: 'Registration Failed'})
         return;
     }
     
     // validate the user inputs
-    const validationError = validate(email, username, password, mobileNum);
+    const validationError = validate(employee_id, name, password);
     if(validationError){
         res.status(500).json({Error: validationError})
         return;
@@ -50,11 +52,11 @@ router.post('/signup', async (req, res, next) => {
         console.log("hash -- ",hash)  // developing
 
         // SAVE DATA IN DATABSE
-        const result = await savaUserCredientials(email, username, hash, mobileNum, connection)
-        const token = jwt.sign({username:  username, email: email, role: "user"},process.env.JWT_SECRET, {expiresIn:'1h'});
+        const result = await savaUserCredientials(employee_id, name, hash, connection)
+        const token = jwt.sign({name: name, employee_id: employee_id },process.env.JWT_SECRET, {expiresIn:'1h'});
         console.log('jwt -- ', token)  // developing
         res.cookie('token',token,{httpOnly: true}) // set cookie
-        res.status(201).json({Error: null, message: 'Registration Successful', userId: result.insertId, 
+        res.status(201).json({Error: null, message: 'Registration Successful', userId: result.employee_id, 
         })
 
     }catch(err){
@@ -117,53 +119,25 @@ router.post('/login', async (req, res, next) => {
 })
 
 
-// check the user inputs availability
-function checkEmptySignUp(email, username, password, mobileNum){
-    if(!email){
-        return "Please Enter Your Email."
-    }
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const valid = regex.test(email);
-    if(!valid){
-        return "invalid Email"
-    }
-    if(!username){
-        return "Please Enter Your Username."
-    }
 
-    if(!password){
-        return "Please Enter a Password."
-    }
-    if(!mobileNum){
-        return "Please Enter Your mobile Number."
-    }
 
-}
 
-function checkEmptyLogin(email, password){
-    if(!email){
-        return "Empty Email"
-    }
-    if(!password){
-        return "Empty Password."
-    }
-    return null;
-}
 
 // validation of the user inputs
-function validate(email, username, password, mobileNum){
+function validate(employee_id, name, password){
 
-    if(typeof username !== 'string'){
+    if(typeof name !== 'string'){
         return 'Invalid Username'
     }
 
-    if (username.length < 3 || username.length > 20) {
+    if (name.length < 3 || name.length > 20) {
         return "invalid username, too short or too long"
       }
-
+  
     if(typeof password !== 'string'){
         return 'Invalid Password'
     }
+
     if(password.length<6){
         return "Password should have minimum 6 characters"
     }
@@ -173,27 +147,28 @@ function validate(email, username, password, mobileNum){
     if(!containsUppercase || !containsSymbol){
         return "Oops! Make sure your password has at least one uppercase letter and one special character."
     }
-
-    const validnum = validateSriLankanPhoneNumber(mobileNum);
-    if(!validnum){
-        return "Please enter valid Phone number"
+    if(!(/^\d{5}$/.test(employee_id))){
+        return "invalid employee number"
     }
+
 }
 
-// validatae whether already registered or not using the email. 
-async function validateEmail(email, connection){
+
+// validatae whether already registered or not using the employee_id. 
+async function registered(employee_id, connection){
+   
     return new Promise((resolve, reject) =>{
-        const query = 'SELECT * FROM user WHERE email = ?';
-        connection.query(query, [email], (err, result) =>{
+        const query = 'SELECT * FROM station_staff WHERE employee_id = ?';
+        connection.query(query, [employee_id], (err, result) =>{
             if(err){
                 reject("Server Error")
                 return
             } 
             if(result.length>0){
-                reject("user Already Registered")
+                reject("You Are Already Registered")
                 return
             }
-            resolve("valid Email")
+            resolve("not registered");
             })
         }) 
 };
@@ -205,11 +180,11 @@ async function hashPassword(password){
 }
 
 // save user details in the database
- function savaUserCredientials(email,username, hashPassword, mobileNum, connection){
+ function savaUserCredientials(employee_id,name, hashPassword, connection){
     
-    const query = 'INSERT INTO user (email, username, password, mobile_number) VALUES (?,?,?,?)';
+    const query = 'INSERT INTO station_staff (employee_id, name, password) VALUES (?,?,?)';
     return new Promise((resolve, reject)=>{
-    connection.query(query, [email, username, hashPassword, mobileNum], (err, result) =>{
+    connection.query(query, [employee_id, name, hashPassword], (err, result) =>{
         if(err){
             reject(err);
         }else{
@@ -223,16 +198,11 @@ async function hashPassword(password){
     
 }
 
-// validate the user input mobile number
-function validateSriLankanPhoneNumber(phoneNumber) {
-    const phoneNumberObj = parsePhoneNumberFromString(phoneNumber, 'LK');
-    return phoneNumberObj && phoneNumberObj.isValid();
-}
 
-async function findUser(email, connection){
+async function findUser(employee_id, connection){
     return new Promise((resolve, reject) =>{
-        const query = 'SELECT * FROM user WHERE email = ?';
-        connection.query(query, [email], (err, result) =>{
+        const query = 'SELECT * FROM station_staff WHERE employee_id = ?';
+        connection.query(query, [employee_id], (err, result) =>{
             if(err){
                 reject("Something Went Wrong")
                 return;
