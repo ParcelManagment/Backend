@@ -1,21 +1,17 @@
 const express = require('express')
-const mongoose = require('mongoose')
-require('dotenv').config()
+const app = express()
+const {connectDb, getConnection} = require('./database/database.js')
+const users = require('./routes/users.js');
+const cookieParser = require('cookie-parser');
 const port = 3000
 
 
-const app = express()
+connectDb();
 
-app.use(express.static('public'))
-app.set('view engine','ejs')
+app.use(express.json())
+app.use(cookieParser())
 
-const dbURI = `mongodb+srv://kavi2020wick:${process.env.PASSWORD}@cluster0.kh6gmvi.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`
-console.log(dbURI);
-//mongoose.connect(dbURI,{useNewUrlParser:true,useUnifiedTopology:true,useCreateIndex:true})
-mongoose.connect(dbURI)
-.then((result)=>console.log("Database connetion success"))
-.catch((err)=>console.log(err));
-
+app.use('/users', users);
 
 app.get('/', (req, res) => {
   res.send('entry point')
