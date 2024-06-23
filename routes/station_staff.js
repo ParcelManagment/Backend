@@ -17,14 +17,16 @@ router.post('/signup', async (req, res, next) => {
         return;
     }
 
+
     // extracting the submitted data
     const data = req.body;
     const employee_id = data.employee_id;
-    const name = data.name;
+    const fname = data.fname;
+    const lname = data.lname;
     const password = data.password;
 
 
-    if(!employee_id || !name || !password){
+    if(!employee_id || !fname || !lname || !password){
         res.status(500).json({Error: "Please submit all the required field"})
         return;
     }
@@ -33,7 +35,11 @@ router.post('/signup', async (req, res, next) => {
 
     // checking the user email is already registered
     try{
-        const newEmployee = await registered(employee_id, connection);
+        const result = await registered(employee_id, connection);
+        if(result.length>0){
+            res.status(409).json({Error: "User has already registered"})
+            return;
+        }
         
     }catch(err){
         res.status(500).json({Error: err, message: 'Registration Failed'})
@@ -41,7 +47,7 @@ router.post('/signup', async (req, res, next) => {
     }
     
     // validate the user inputs
-    const validationError = validate(employee_id, name, password);
+    const validationError = validate(employee_id, fname, lname, password);
     if(validationError){
         res.status(500).json({Error: validationError})
         return;
@@ -52,8 +58,8 @@ router.post('/signup', async (req, res, next) => {
         console.log("hash -- ",hash)  // developing
 
         // SAVE DATA IN DATABSE
-        const result = await savaUserCredientials(employee_id, name, hash, connection)
-        const token = jwt.sign({name: name, employee_id: employee_id },process.env.JWT_SECRET, {expiresIn:'1h'});
+        const token = jwt.sign({fname: fname, lname: lname,  employee_id: employee_id },process.env.JWT_SECRET, {expiresIn:'1h'});
+        const result = await savaUserCredientials(employee_id, fname, lname, hash, connection)
         console.log('jwt -- ', token)  // developing
         res.cookie('token',token,{httpOnly: true}) // set cookie
         res.status(201).json({Error: null, message: 'Registration Successful', userId: result.employee_id, 
@@ -83,34 +89,35 @@ router.post('/login', async (req, res, next) => {
     }
 
     const data = req.body;
-    const email = data.email;
+    const employee_id = data.employee_id;
     const password = data.password;
 
     // check empty fields
-    const invalid = checkEmptyLogin(email, password);
-    if(invalid){
-        res.status(400).json({Error: "Empty Fields. Please Try Agian", invalid})
+    if (!employee_id || !password) {
+        res.status(400).json({ Error: "Empty Fields. Please Try Again" });
         return;
     }
 
-    try{
-        const user = await findUser(email, connection);
-        const validPassword = await verifyPassword(password, user.password);
+    try {
+        const user = await findUser(employee_id, connection);
+        if (!user) {
+            res.status(401).json({ Error: "User not found" });
+            return;
+        }
         
-        if(!validPassword){
-            res.status(401).json({Error: "invalid Password"});
-            return;        
+
+        const validPassword = await verifyPassword(password, user.password);
+        if (!validPassword) {
+            res.status(401).json({ Error: "Invalid Password" });
+            return;
         }
 
-        console.log("valid") //developing
-        const token = jwt.sign({username: user.username, email: user.email, role: user.role},process.env.JWT_SECRET, {expiresIn:'1h'});
-        console.log('jwt -- ', token)  // developing
-        res.cookie('token',token,{httpOnly: true})
-        res.status(200).json({Error: null, massage: "login Successful"})
-        
-    }catch(err){
-        res.status(500).json({Error: err})
-        console.log(err)
+        const token = jwt.sign({ employee_id: user.employee_id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        res.cookie('token', token, { httpOnly: true });
+        res.status(200).json({ Error: null, message: "Login Successful" });
+
+    } catch (err) {
+        res.status(500).json({ Error: err });
     }
 
 
@@ -118,22 +125,25 @@ router.post('/login', async (req, res, next) => {
 
 })
 
-
-
-
-
-
 // validation of the user inputs
-function validate(employee_id, name, password){
+function validate(employee_id, fname, lname, password){
 
-    if(typeof name !== 'string'){
+    if(typeof fname !== 'string'){
         return 'Invalid Username'
     }
 
-    if (name.length < 3 || name.length > 20) {
+    if (fname.length < 3 || fname.length > 20) {
         return "invalid username, too short or too long"
       }
-  
+    
+      if(typeof lname !== 'string'){
+        return 'Invalid Username'
+    }
+
+    if (lname.length < 3 || lname.length > 20) {
+        return "invalid username, too short or too long"
+      }
+
     if(typeof password !== 'string'){
         return 'Invalid Password'
     }
@@ -164,11 +174,7 @@ async function registered(employee_id, connection){
                 reject("Server Error")
                 return
             } 
-            if(result.length>0){
-                reject("You Are Already Registered")
-                return
-            }
-            resolve("not registered");
+            resolve(result);
             })
         }) 
 };
@@ -180,11 +186,11 @@ async function hashPassword(password){
 }
 
 // save user details in the database
- function savaUserCredientials(employee_id,name, hashPassword, connection){
+ function savaUserCredientials(employee_id,fname, lname, hashPassword, connection){
     
-    const query = 'INSERT INTO station_staff (employee_id, name, password) VALUES (?,?,?)';
+    const query = 'INSERT INTO station_staff (employee_id, first_name, last_name, password) VALUES (?,?,?,?)';
     return new Promise((resolve, reject)=>{
-    connection.query(query, [employee_id, name, hashPassword], (err, result) =>{
+    connection.query(query, [employee_id, fname, lname, hashPassword], (err, result) =>{
         if(err){
             reject(err);
         }else{
@@ -195,9 +201,8 @@ async function hashPassword(password){
     
     });
 
-    
+  
 }
-
 
 async function findUser(employee_id, connection){
     return new Promise((resolve, reject) =>{
@@ -207,10 +212,6 @@ async function findUser(employee_id, connection){
                 reject("Something Went Wrong")
                 return;
             } 
-            if(result.length == 0){
-                reject("Not Registered")
-                return;
-            }
             resolve(result[0]);
             })
         }) 
@@ -220,4 +221,4 @@ async function verifyPassword(password, hashPassword){
     return await bcrypt.compare(password, hashPassword);
 }
 
-module.exports = router;
+module.exports = router;  
