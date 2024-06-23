@@ -158,12 +158,9 @@ function validate(email, username, password, mobileNum){
     }
 
     if (username.length < 3 || username.length > 20) {
-        return "invalid username, too short"
+        return "invalid username, too short or too long"
       }
 
-    if(username.length <2){
-        return "invalid username"
-    }
     if(typeof password !== 'string'){
         return 'Invalid Password'
     }
