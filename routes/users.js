@@ -17,12 +17,13 @@ router.post('/signup', async (req, res, next) => {
     }
 
     const data = req.body;
-    const username = data.username;
+    const fname = data.fname;
+    const lname = data.lname
     const password = data.password;
     const email = data.email;
     const mobileNum = data.mobileNum
 
-    const emptyFields = checkEmptySignUp(email, username, password, mobileNum);
+    const emptyFields = checkEmptySignUp(email, fname, lname, password, mobileNum);
     
     if(emptyFields){
         res.status(500).json({Error: emptyFields})
@@ -31,15 +32,20 @@ router.post('/signup', async (req, res, next) => {
 
     // checking the user email is already registered
     try{
-        const validEmail = await validateEmail(email, connection);
-        console.log(validEmail)
+        const result = await validateEmail(email, connection);
+        if(result){
+                res.status(409).json({Error: "User has already registered"})
+                return
+        }
+       
     }catch(err){
+        console.log(err)
         res.status(500).json({Error: err, message: 'Registration Failed'})
         return;
     }
     
     // validate the user inputs
-    const validationError = validate(email, username, password, mobileNum);
+    const validationError = validate(fname, lname, password, mobileNum);
     if(validationError){
         res.status(500).json({Error: validationError})
         return;
@@ -47,19 +53,16 @@ router.post('/signup', async (req, res, next) => {
     
     try{
         const hash = await hashPassword(password)
-        console.log("hash -- ",hash)  // developing
 
-        // SAVE DATA IN DATABSE
-        const result = await savaUserCredientials(email, username, hash, mobileNum, connection)
-        const token = jwt.sign({username:  username, email: email, role: "user"},process.env.JWT_SECRET, {expiresIn:'1h'});
-        console.log('jwt -- ', token)  // developing
+        // CREATE JWT AND SAVE DATA IN DATABSE
+        const token = jwt.sign({fname:  fname, lname: lname, email: email, role: "user"},process.env.JWT_SECRET, {expiresIn:'1h'});
+        const result = await savaUserCredientials(email, fname, lname, hash, mobileNum, connection)
         res.cookie('token',token,{httpOnly: true}) // set cookie
         res.status(201).json({Error: null, message: 'Registration Successful', userId: result.insertId, 
         })
 
     }catch(err){
         try{
-        console.log("registration error occured", err);  // developing
         res.status(500).json({Error: "Registration Failed"})
         }catch(error){
             console.log('error occured while responding to the client')
@@ -93,6 +96,12 @@ router.post('/login', async (req, res, next) => {
 
     try{
         const user = await findUser(email, connection);
+
+        if(!user){
+            res.status(401).json({ Error: "User not found" });
+            return;
+        }
+
         const validPassword = await verifyPassword(password, user.password);
         
         if(!validPassword){
@@ -101,13 +110,13 @@ router.post('/login', async (req, res, next) => {
         }
 
         console.log("valid") //developing
-        const token = jwt.sign({username: user.username, email: user.email, role: user.role},process.env.JWT_SECRET, {expiresIn:'1h'});
+        const token = jwt.sign({fname:  user.fname, lname: user.lname, email: email, role: user.role},process.env.JWT_SECRET, {expiresIn:'1h'});
         console.log('jwt -- ', token)  // developing
         res.cookie('token',token,{httpOnly: true})
         res.status(200).json({Error: null, massage: "login Successful"})
         
     }catch(err){
-        res.status(500).json({Error: err})
+        res.status(500).json({Error: "Something went Wrong"})
         console.log(err)
     }
 
@@ -118,7 +127,7 @@ router.post('/login', async (req, res, next) => {
 
 
 // check the user inputs availability
-function checkEmptySignUp(email, username, password, mobileNum){
+function checkEmptySignUp(email, fname, lname, password, mobileNum){
     if(!email){
         return "Please Enter Your Email."
     }
@@ -127,8 +136,8 @@ function checkEmptySignUp(email, username, password, mobileNum){
     if(!valid){
         return "invalid Email"
     }
-    if(!username){
-        return "Please Enter Your Username."
+    if(!fname || !lname){
+        return "Please Enter Your first and last name."
     }
 
     if(!password){
@@ -151,13 +160,13 @@ function checkEmptyLogin(email, password){
 }
 
 // validation of the user inputs
-function validate(email, username, password, mobileNum){
+function validate(fname, lname, password, mobileNum){
 
-    if(typeof username !== 'string'){
+    if(typeof lname !== 'string' || typeof fname !== 'string'){
         return 'Invalid Username'
     }
 
-    if (username.length < 3 || username.length > 20) {
+    if (fname.length < 3 || fname.length > 20 || lname.length < 3 || lname.length > 20) {
         return "invalid username, too short or too long"
       }
 
@@ -189,11 +198,7 @@ async function validateEmail(email, connection){
                 reject("Server Error")
                 return
             } 
-            if(result.length>0){
-                reject("user Already Registered")
-                return
-            }
-            resolve("valid Email")
+            resolve(result[0])
             })
         }) 
 };
@@ -205,11 +210,11 @@ async function hashPassword(password){
 }
 
 // save user details in the database
- function savaUserCredientials(email,username, hashPassword, mobileNum, connection){
+ function savaUserCredientials(email, fname, lname, hashPassword, mobileNum, connection){
     
-    const query = 'INSERT INTO user (email, username, password, mobile_number) VALUES (?,?,?,?)';
+    const query = 'INSERT INTO user (email, first_name, last_name, password, mobile_number) VALUES (?,?,?,?,?)';
     return new Promise((resolve, reject)=>{
-    connection.query(query, [email, username, hashPassword, mobileNum], (err, result) =>{
+    connection.query(query, [email, fname, lname, hashPassword, mobileNum], (err, result) =>{
         if(err){
             reject(err);
         }else{
@@ -237,10 +242,6 @@ async function findUser(email, connection){
                 reject("Something Went Wrong")
                 return;
             } 
-            if(result.length == 0){
-                reject("Not Registered")
-                return;
-            }
             resolve(result[0]);
             })
         }) 
