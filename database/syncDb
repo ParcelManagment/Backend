@@ -1,0 +1,14 @@
+const sequelize = require("./connectSequelize");
+
+
+// Synchronize all models with the database
+async function syncDb() {
+    try {
+        await sequelize.sync({ alter: false });
+        console.log('Database synchronized successfully.');
+    } catch (error) {
+        console.error('Error synchronizing database:', error);
+    }
+};
+
+module.exports = syncDb;
