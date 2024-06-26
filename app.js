@@ -4,10 +4,18 @@ const {connectDb, getConnection} = require('./database/database.js')
 const users = require('./routes/users.js');
 const staff = require('./routes/station_staff.js');
 const cookieParser = require('cookie-parser');
-const sequelize = require("./database/connectSequelize.js")
-const port = 3001
+const sequelize = require("./database/connectSequelize.js");
+const syncDb = require('./database/syncDb');
+const User = require('./models/user.js');
+const Package = require("./models/package.js")
+const test = require('./testing.js')
+const port = 3000
 
-const UnregisteredUser = require('./models/user_nr.js')
+
+//syncDb()
+
+
+test()
 
 
 

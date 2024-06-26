@@ -1,4 +1,6 @@
 const sequelize = require("./connectSequelize");
+const unRegisteredUser = require('../models/user')
+const Package = require("../models/package")
 
 
 // Synchronize all models with the database

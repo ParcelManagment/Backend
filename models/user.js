@@ -9,8 +9,9 @@ User.init({
   password: { type: DataTypes.STRING, allowNull: false },
   first_name: { type: DataTypes.STRING, allowNull: false },
   last_name: { type: DataTypes.STRING, allowNull: false },
-  phone_number: { type: DataTypes.STRING },
-  role: { type: DataTypes.ENUM('user'), defaultValue: 'user', allowNull: false }
-}, { tableName: "user", sequelize, modelName: 'User' });
+  mobile_number: { type: DataTypes.INTEGER },
+  role: { type: DataTypes.ENUM('user'), defaultValue: 'user', allowNull: false },
+  
+}, { tableName: "user", sequelize, modelName: 'User', timestamps:false});
 
 module.exports = User;

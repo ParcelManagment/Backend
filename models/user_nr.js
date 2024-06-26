@@ -23,14 +23,14 @@ UnregisteredUser.init({
         type: DataTypes.STRING,
          allowNull: false
     },
-    phone_number: { 
+    mobile_number: { 
         type: DataTypes.STRING, 
         allowNull: false
     }
     },{
     sequelize, 
     modelName: 'UnregisteredUser', 
-    tableName: 'users_NR', // Explicitly define the table name
+    tableName: 'user_NR', // Explicitly define the table name
     timestamps: false // Disable timestamps
 
 })
