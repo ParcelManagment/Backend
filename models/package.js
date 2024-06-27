@@ -17,7 +17,6 @@ Package.init({
   destination: { type: DataTypes.STRING, allowNull: false },
   price: { type: DataTypes.INTEGER, allowNull: false },
   tracking_device_id: { type: DataTypes.INTEGER, allowNull: false },
-  created_at: { type: DataTypes.DATE },
   submitted: { type: DataTypes.DATE  },
   out_for_delivery: { type: DataTypes.DATE },
   arrived: { type: DataTypes.DATE },
@@ -34,6 +33,8 @@ User.hasMany(Package, {
     sender_type: 'User'
   }
 });
+
+
 UnregisteredUser.hasMany(Package, {
   foreignKey: 'sender_id',
   constraints: false,
