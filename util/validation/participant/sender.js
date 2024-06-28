@@ -10,10 +10,8 @@ const validateSender = async function(req, res, next){
         if(result.isEmpty()){
             return
         }else{
-            res.status(400).json({Error: result.array()})
-            
+            res.status(400).json({Error: result.array()})   
         }
-        
     }
 }
 

@@ -11,9 +11,7 @@ const validateReceiver = async (req, res, next)=>{
             return
         }else{
             res.status(400).json({Error: result.array()})
-            
-        }
-        
+        } 
     }
 }
 

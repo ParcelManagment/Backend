@@ -9,14 +9,13 @@ const sequelize = require("./database/connectSequelize.js");
 const syncDb = require('./database/syncDb');
 const User = require('./models/user.js');
 const Package = require("./models/package.js")
-const test = require('./testing.js')
 const port = 3000
 
 
 //syncDb()
 
 
-//test()
+
 
 
 
@@ -28,13 +27,13 @@ app.use(cookieParser())
 
 app.use('/users', users); // user registration and login
 app.use('/staff', staff); // staff login and registration
-app.use('/package', packageRouter);
-
+app.use('/package', packageRouter);  //  package creation and manupulation
 
 
 app.get('/', (req, res) => {
   res.send('entry point')
 })
+
 app.get('/login', (req, res) => {
   res.send('This is login')
 })

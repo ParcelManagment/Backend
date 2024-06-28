@@ -1,21 +1,15 @@
 const sequelize = require("../../../database/connectSequelize.js");
-const syncDb = require('../../../database/syncDb');
 const User = require('../../../models/user.js');
 const UnregisteredUser = require('../../../models/user_nr.js');
 const validateReceiver = require("./receiver.js");
 const validateSender = require("./sender.js");
 
-
-
 const findParticipant = async (req, res, next) => {
 
-   
-    
     let t;
 
     try{
 
-        
         t = await sequelize.transaction();
         req.transaction = t;
 
@@ -29,7 +23,6 @@ const findParticipant = async (req, res, next) => {
             
             req.body.sender.sender_id = sender.id
             req.body.sender.sender_type = "User"
-            
             
         }else{
             
@@ -56,13 +49,12 @@ const findParticipant = async (req, res, next) => {
         if(receiver){
             req.body.receiver.receiver_id = receiver.id
             req.body.receiver.receiver_type = "User"
-        
-            
             next();
+            
         }else{
             const receiver_nr = await UnregisteredUser.findOne({where:{email:receiverEmail}});
+            
             if(receiver_nr){
-
                 req.body.receiver.receiver_id = receiver_nr.id;
                 req.body.receiver.receiver_type = "UnregisteredUser"
                 next()
@@ -87,9 +79,6 @@ const findParticipant = async (req, res, next) => {
         console.log(err)
         res.status(500).json({Error: "Something went Wrong"});
     }
-    
-    
-
 }
 
 module.exports = findParticipant;
