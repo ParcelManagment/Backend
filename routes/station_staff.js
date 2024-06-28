@@ -78,6 +78,7 @@ router.post('/signup', async (req, res, next) => {
     }
 });
 
+
 router.post('/login', async (req, res, next) => {
 
   
@@ -112,12 +113,12 @@ router.post('/login', async (req, res, next) => {
             return;
         }
 
-        const token = jwt.sign({ employee_id: user.employee_id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        const token = jwt.sign({ employee_id: user.employee_id, role: user.role}, process.env.JWT_SECRET, { expiresIn: '60s'});
         res.cookie('token', token, { httpOnly: true });
         res.status(200).json({ Error: null, message: "Login Successful" });
 
     } catch (err) {
-        res.status(500).json({ Error: err });
+        res.status(500).json({ Error: "Something went Wrong while login" });
     }
 
 
@@ -179,6 +180,7 @@ async function registered(employee_id, connection){
         }) 
 };
 
+
 async function hashPassword(password){
     const saltRound = 10;
     const hash = await bcrypt.hash(password,saltRound);
@@ -204,6 +206,7 @@ async function hashPassword(password){
   
 }
 
+
 async function findUser(employee_id, connection){
     return new Promise((resolve, reject) =>{
         const query = 'SELECT * FROM station_staff WHERE employee_id = ?';
@@ -217,8 +220,12 @@ async function findUser(employee_id, connection){
         }) 
 };
 
+
 async function verifyPassword(password, hashPassword){
     return await bcrypt.compare(password, hashPassword);
 }
 
 module.exports = router;  
+
+
+

@@ -26,7 +26,7 @@ router.post('/signup', async (req, res, next) => {
     const emptyFields = checkEmptySignUp(email, fname, lname, password, mobileNum);
     
     if(emptyFields){
-        res.status(500).json({Error: emptyFields})
+        res.status(400).json({Error: emptyFields})
         return;
     }
 
