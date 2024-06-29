@@ -55,19 +55,17 @@ router.post('/signup', async (req, res, next) => {
     
     try{
         const hash = await hashPassword(password)
-        console.log("hash -- ",hash)  // developing
 
         // SAVE DATA IN DATABSE
         const token = jwt.sign({fname: fname, lname: lname,  employee_id: employee_id },process.env.JWT_SECRET, {expiresIn:'1h'});
         const result = await savaUserCredientials(employee_id, fname, lname, hash, connection)
-        console.log('jwt -- ', token)  // developing
         res.cookie('token',token,{httpOnly: true}) // set cookie
         res.status(201).json({Error: null, message: 'Registration Successful', userId: result.employee_id, 
         })
 
     }catch(err){
         try{
-        console.log("registration error occured", err);  // developing
+        console.log("registration error occured", err);  // developing///////////////////////////////////////////////
         res.status(500).json({Error: "Registration Failed"})
         }catch(error){
             console.log('error occured while responding to the client')
@@ -113,7 +111,7 @@ router.post('/login', async (req, res, next) => {
             return;
         }
 
-        const token = jwt.sign({ employee_id: user.employee_id, role: user.role}, process.env.JWT_SECRET, { expiresIn: '60s'});
+        const token = jwt.sign({ employee_id: user.employee_id, role: user.role}, process.env.JWT_SECRET, { expiresIn: '1h'});
         res.cookie('token', token, { httpOnly: true });
         res.status(200).json({ Error: null, message: "Login Successful" });
 
