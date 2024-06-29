@@ -212,16 +212,15 @@ async function hashPassword(password){
 // save user details in the database
  function savaUserCredientials(email, fname, lname, hashPassword, mobileNum, connection){
     
-    const query = 'INSERT INTO user (email, first_name, last_name, password, mobile_number) VALUES (?,?,?,?,?)';
+    const query = 'INSERT INTO user (email, first_name, last_name, password, mobile_number, role) VALUES (?,?,?,?,?,?)';
     return new Promise((resolve, reject)=>{
-    connection.query(query, [email, fname, lname, hashPassword, mobileNum], (err, result) =>{
+    connection.query(query, [email, fname, lname, hashPassword, mobileNum, 'user'], (err, result) =>{
         if(err){
             reject(err);
         }else{
             resolve(result)
         }
     })
-   
     
     });
 
