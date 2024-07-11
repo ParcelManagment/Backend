@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signup</title>
+</head>
+
+<body>
+    <h1>Sign Up</h1>
+    <form id="signupForm">
+        <label for="fname">First Name:</label>
+        <input type="text" id="fname" name="fname" required><br><br>
+
+        <label for="lname">Last Name:</label>
+        <input type="text" id="lname" name="lname" required><br><br>
+
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required><br><br>
+
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required><br><br>
+
+        <label for="mobileNum">Mobile Number:</label>
+        <input type="tel" id="mobileNum" name="mobileNum" required><br><br>
+
+        <button type="submit">Sign Up</button>
+    </form>
+
+    <script>
+        document.getElementById('signupForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const formData = {
+                fname: document.getElementById('fname').value,
+                lname: document.getElementById('lname').value,
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value,
+                mobileNum: document.getElementById('mobileNum').value
+            };
+
+            try {
+                const response = await fetch('/auth/signup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+                if (response.status === 201) {
+                    alert('Registration Successful');
+                } else {
+                    alert(`Error: ${result.Error}`);
+                }
+            } catch (error) {
+                alert('An error occurred: ' + error.message);
+            }
+        });
+    </script>
+</body>
+
+</html>

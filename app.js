@@ -15,8 +15,8 @@ const port = 3000
 //syncDb()
 
 
-
-
+//try to use 
+//app.use(express.static(path.join(__dirname, 'public')));
 
 
 
