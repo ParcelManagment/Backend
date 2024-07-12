@@ -2,12 +2,15 @@ const express = require("express");
 const mysql = require("mysql2");
 const app = express();
 
+
 const con = mysql.createConnection({
     host: "localhost",
     user: "root",
     password: null,
     database: "parcel"
 });
+
+
 
 con.connect((err) => {
     if (err) {
@@ -17,10 +20,23 @@ con.connect((err) => {
     }
 });
 
+
+
 app.get("/fetchbyid/:id", (req, res) => {
     const fetchid = req.params.id;
 
     con.query("SELECT name FROM mytable WHERE id=?", [fetchid], function(err, result, fields) {
+        if (err) {
+            console.log(err);
+            res.status(500).send(err);  // Send error response if there is an error
+        } else {
+            res.send(result);
+        }
+    });
+});
+
+app.get("/tracking", (req, res) => {
+    con.query("SELECT * FROM trackingdevice", function(err, result, fields) {
         if (err) {
             console.log(err);
             res.status(500).send(err);  // Send error response if there is an error
