@@ -11,7 +11,6 @@ User.init({
   last_name: { type: DataTypes.STRING, allowNull: false },
   mobile_number: { type: DataTypes.INTEGER },
   role: { type: DataTypes.ENUM('user'), defaultValue: 'user_nr', allowNull: false },
-  
 }, { tableName: "user", sequelize, modelName: 'User', timestamps:false});
 
 module.exports = User;
