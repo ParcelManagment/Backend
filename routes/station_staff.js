@@ -65,7 +65,7 @@ router.post('/signup', async (req, res, next) => {
 
     }catch(err){
         try{
-        console.log("registration error occured", err);  // developing///////////////////////////////////////////////
+        console.log("registration error occured", err);  // developing//////////////////////////////////////////////////
         res.status(500).json({Error: "Registration Failed"})
         }catch(error){
             console.log('error occured while responding to the client')
@@ -104,7 +104,6 @@ router.post('/login', async (req, res, next) => {
             return;
         }
         
-
         const validPassword = await verifyPassword(password, user.password);
         if (!validPassword) {
             res.status(401).json({ Error: "Invalid Password" });
