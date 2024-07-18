@@ -5,7 +5,8 @@ const User = require('./user');
 class Package extends Model {}
 
 Package.init({
-  package_id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  id:{type:DataTypes.INTEGER, primaryKey:true, autoIncrement:true},
+  package_id: { type: DataTypes.STRING, unique:true, allowNull:false},
   tag_id: { type: DataTypes.STRING, unique: true, allowNull: false },
   sender_id: { type: DataTypes.INTEGER, allowNull: false },
   receiver_id: { type: DataTypes.INTEGER, allowNull: false },
