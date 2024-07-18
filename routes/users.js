@@ -40,7 +40,7 @@ router.post('/signup', async (req, res, next) => {
        
     }catch(err){
         console.log(err)
-        res.status(500).json({Error: err, message: 'Registration Failed'})
+        res.status(500).json({Error: err, message: 'Registration Failed validate email'+err.massage})
         return;
     }
     
@@ -63,7 +63,7 @@ router.post('/signup', async (req, res, next) => {
 
     }catch(err){
         try{
-        res.status(500).json({Error: "Registration Failed"})
+        res.status(500).json({Error: "Registration Failed jwt sign"+err.message})
         }catch(error){
             console.log('error occured while responding to the client')
         }
@@ -195,7 +195,7 @@ async function validateEmail(email, connection){
         const query = 'SELECT * FROM user WHERE email = ?';
         connection.query(query, [email], (err, result) =>{
             if(err){
-                reject("Server Error")
+                reject("Server Error"+err.message)
                 return
             } 
             resolve(result[0])
@@ -216,7 +216,7 @@ async function hashPassword(password){
     return new Promise((resolve, reject)=>{
     connection.query(query, [email, fname, lname, hashPassword, mobileNum, 'user'], (err, result) =>{
         if(err){
-            reject(err);
+            reject("save user credietials"+err.message);
         }else{
             resolve(result)
         }
@@ -238,7 +238,7 @@ async function findUser(email, connection){
         const query = 'SELECT * FROM user WHERE email = ?';
         connection.query(query, [email], (err, result) =>{
             if(err){
-                reject("Something Went Wrong")
+                reject("Something Went Wrong find user "+err.message)
                 return;
             } 
             resolve(result[0]);
