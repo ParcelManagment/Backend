@@ -9,9 +9,13 @@ const sequelize = require("./database/connectSequelize.js");
 const syncDb = require('./database/syncDb');
 const User = require('./models/user.js');
 const Package = require("./models/package.js");
+const cors = require('cors');
 const port = 3000
 
+app.use(cors());
+
 //syncDb()
+
 
 connectDb();
 

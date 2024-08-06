@@ -123,6 +123,8 @@ router.post('/login', async (req, res, next) => {
 
 })
 
+
+
 // validation of the user inputs
 function validate(employee_id, fname, lname, password){
 
