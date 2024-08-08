@@ -16,7 +16,7 @@ const isStaff = (req, res, next) => {
         next()
 
     }catch(error){
-        res.status(401).json("Unauthorized")
+        res.status(401).json(error.message)
         return;
     }
     

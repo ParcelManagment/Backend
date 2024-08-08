@@ -18,10 +18,10 @@ router.post('/signup', async (req, res, next) => {
 
     const data = req.body;
     const fname = data.fname;
-    const lname = data.lname
+    const lname = data.lname;
     const password = data.password;
     const email = data.email;
-    const mobileNum = data.mobileNum
+    const mobileNum = data.mobileNum;
 
     const emptyFields = checkEmptySignUp(email, fname, lname, password, mobileNum);
     
