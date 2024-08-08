@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const isStaff = require('../util/auth/staffAuth.js');
 
+const  {connectDb,getConnection, endConnection} = require('../database/database.js');
 
-const  {connectDb,getConnection, endConnection} = require('../database/database.js')
 
 
 router.post('/signup', async (req, res, next) => {
@@ -124,6 +125,29 @@ router.post('/login', async (req, res, next) => {
 })
 
 
+router.get('/profile', isStaff, async (req, res) => {
+    const connection = getConnection();
+    if (!connection) {
+        console.log("Database connection unavailable");
+        res.status(500).json({ Error: "Database Error" });
+        return;
+    }
+
+    const employee_id = req.staff_id;
+    try {
+        const employee = await getEmployeeById(employee_id, connection);
+        if (!employee) {
+            res.status(404).json({ Error: "Employee not found" });
+            return;
+        }
+
+        res.status(200).json({ Error: null, employee: employee });
+
+    } catch (err) {
+        res.status(500).json({ Error: err.message });
+    }
+});
+
 
 // validation of the user inputs
 function validate(employee_id, fname, lname, password){
@@ -223,6 +247,27 @@ async function findUser(employee_id, connection){
 async function verifyPassword(password, hashPassword){
     return await bcrypt.compare(password, hashPassword);
 }
+
+
+async function getEmployeeById(employee_id, connection) {
+    return new Promise((resolve, reject) => {
+        const query = 'SELECT  employee_id, first_name, last_name, role FROM station_staff WHERE employee_id = ?';
+        connection.query(query, [employee_id], (err, result) => {
+            if (err) {
+                reject("Something Went Wrong");
+                return;
+            }
+            if (result.length == 0) {
+                reject("Employee not found");
+                return;
+            }
+            resolve(result[0]);
+        });
+    });
+}
+
+
+
 
 module.exports = router;  
 
