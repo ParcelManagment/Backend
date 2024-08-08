@@ -149,6 +149,11 @@ router.get('/profile', isStaff, async (req, res) => {
 });
 
 
+router.get('/logout', (req, res, next)=>{
+    res.clearCookie('token');
+    res.status(201).json({message: "successfully logout"})
+})
+
 // validation of the user inputs
 function validate(employee_id, fname, lname, password){
 
