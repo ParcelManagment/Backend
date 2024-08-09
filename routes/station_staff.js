@@ -28,7 +28,7 @@ router.post('/signup', async (req, res, next) => {
 
 
     if(!employee_id || !fname || !lname || !password){
-        res.status(500).json({Error: "Please submit all the required field"})
+        res.status(400).json({Error: "Please submit all the required field"})
         return;
     }
     
@@ -50,7 +50,7 @@ router.post('/signup', async (req, res, next) => {
     // validate the user inputs
     const validationError = validate(employee_id, fname, lname, password);
     if(validationError){
-        res.status(500).json({Error: validationError})
+        res.status(400).json({Error: validationError})
         return;
     }
     
